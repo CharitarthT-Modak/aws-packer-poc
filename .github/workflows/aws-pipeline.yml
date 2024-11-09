@@ -1,1 +1,48 @@
-# Thank You github for github actions
+name: Build Packer Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  packer:
+    runs-on: self-hosted  # Run on self-hosted runner
+
+    env:
+      PACKER_LOG: 1  # Enable Packer logging for troubleshooting
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up HashiCorp Packer
+        uses: hashicorp/setup-packer@v2
+
+      - name: Initialize Packer template
+        run: packer init .
+
+      - name: Validate Packer template
+        run: packer validate --var-file=values.pkrvars.hcl .
+
+      - name: Build Packer Image
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          # Pass AWS credentials as environment variables
+          packer build \
+            -var "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -var "aws_default_region={{ secrets.AWS_DEFAULT_REGION }}" \
+            --var-file=values.pkrvars.hcl .
+
+      - name: Notify success
+        if: success()
+        run: echo "Packer image build successful!"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "Packer image build failed."

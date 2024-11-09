@@ -6,30 +6,11 @@ echo "Shell Script detected."
 set -euxo pipefail
 
 install_docker() {
-  sudo apt-get update -y && sudo apt-get upgrade -y
-  echo "Installing docker..."
-  curl -fsSL https://get.docker.com -o get-docker.sh
-  sudo sh get-docker.sh   
-  echo "Successfully Installed docker"
-  echo "Pulling Docker images."
-
-  curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz
-  tar -xf google-cloud-cli-linux-x86_64.tar.gz
-  ./google-cloud-sdk/install.sh --quiet
-  source ./google-cloud-sdk/path.bash.inc
-  echo "Authenticating with Google Cloud using service account key..."
-  gcloud auth activate-service-account --key-file=/tmp/gcp-creds.json
-  cat /tmp/gcp-creds.json
-    gcloud config list
-
-  gcloud auth configure-docker us.gcr.io
-
-#   docker pull us.gcr.io/modak-nabu/yeedu_cfe:v2.9.5-rc1    
-#   docker pull us.gcr.io/modak-nabu/yeedu_reactive_actors:v4.13.1-rc15  
-#   docker pull us.gcr.io/modak-nabu/yeedu_spark:v3.4.3-rc2
-  docker pull us.gcr.io/modak-nabu/yeedu_telegraf:1.28.2
-
-  echo "Docker images pulled successfully."
+    sudo apt-get update -y && sudo apt-get upgrade -y
+    echo "Installing docker..."
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh   
+    echo "Successfully Installed docker"
 }
 
 install_gcloud() {
@@ -37,14 +18,15 @@ install_gcloud() {
     curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz
     tar -xf google-cloud-cli-linux-x86_64.tar.gz
     ./google-cloud-sdk/install.sh --path-update=true --usage-reporting=false --quiet
-    ./google-cloud-sdk/bin/gcloud init
+    source ./google-cloud-sdk/path.bash.inc
+    # ./google-cloud-sdk/bin/gcloud init
     echo "gcloud installed Successfully"
 }
 
 install_aws() {
     echo "Installing AWS CLI..."
     sudo apt-get update
-    sudo apt-get install -y curl unzip
+    sudo apt-get install -y curl unzip jq  # Install jq here
 
     # Download and install AWS CLI
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -57,7 +39,40 @@ install_aws() {
         echo "AWS CLI installed successfully."
     else
         echo "AWS CLI installation failed."
+        exit 1
     fi
+
+    # Check if AWS credentials file exists and configure AWS CLI
+    if [[ -f "/tmp/aws-creds.json" ]]; then
+        echo "Configuring AWS credentials from file..."
+
+        # Extract credentials from aws-creds.json and set them as environment variables
+        AWS_ACCESS_KEY_ID=$(jq -r '.AWS_ACCESS_KEY_ID' /tmp/aws-creds.json)
+        AWS_SECRET_ACCESS_KEY=$(jq -r '.AWS_SECRET_ACCESS_KEY' /tmp/aws-creds.json)
+        AWS_DEFAULT_REGION=$(jq -r '.AWS_DEFAULT_REGION' /tmp/aws-creds.json)
+
+        export AWS_ACCESS_KEY_ID
+        export AWS_SECRET_ACCESS_KEY
+        export AWS_DEFAULT_REGION
+
+        # Verify AWS CLI configuration
+        # aws configure list
+    else
+        echo "AWS credentials file not found."
+        exit 1
+    fi
+
+    # Authenticate Docker with AWS ECR
+    echo "Authenticating Docker with AWS ECR..."
+    aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 703145693148.dkr.ecr.us-east-2.amazonaws.com
+
+    # Pull Docker image from AWS ECR
+    echo "Pulling Docker image from AWS ECR..."
+    # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_cfe:v2.9.5-rc1  
+    # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_reactive_actors:v4.13.1-rc15  
+    # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_spark:v3.4.3-rc2
+    docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_telegraf:1.28.2
+    echo "Docker images pulled successfully."
 }
 
 install_azcopy() {
@@ -153,9 +168,11 @@ EOF
 
 
 main() {
+    # lsblk -o NAME,SIZE,TYPE,MOUNTPOINT
+    # df -h
     install_docker
     # install_gcloud
-    # install_aws
+    install_aws
     # install_azcopy
     # install_az_cli
     # install_fluentd

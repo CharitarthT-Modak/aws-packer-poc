@@ -45,7 +45,7 @@
 #   }
 
 # }
-
+# Packer configuration file
 
 packer {
   required_plugins {
@@ -55,6 +55,9 @@ packer {
     }
   }
 }
+
+variable "aws_access_key" {}
+variable "aws_secret_key" {}
 
 source "amazon-ebs" "ubuntu" {
   ami_name      = "ami-yeedu-test"
@@ -69,32 +72,47 @@ source "amazon-ebs" "ubuntu" {
     "env"      = "packer"
   }
 
+  run_tags = {
+    "resource" = "yeedu"
+    "env"      = "packer"
+  }
+
   launch_block_device_mappings {
-    device_name = "/dev/xvda"
-    volume_size = 25
-    volume_type = "gp2"
+    device_name           = "/dev/sda1" 
+    volume_size           = 25     
+    volume_type           = "gp2"       
+    delete_on_termination = true
   }
 }
 
 build {
-  sources = [
-    "source.amazon-ebs.ubuntu"
-  ]
+  sources = ["source.amazon-ebs.ubuntu"]
 
+  # Provision the AWS credentials file in JSON format
+  provisioner "file" {
+    content = <<-EOF
+    {
+      "AWS_ACCESS_KEY_ID": "${var.aws_access_key_id}",
+      "AWS_SECRET_ACCESS_KEY": "${var.aws_secret_access_key}"
+      "AWS_DEFAULT_REGION": "${var.aws_default_region}"
+    }
+    EOF
+    destination = "/tmp/aws-creds.json"
+  }
+
+  # Upload setup script and provision AWS credentials
   provisioner "file" {
     source      = "scripts/setup.sh"
     destination = "/tmp/setup.sh"
   }
-  provisioner "file" {
-    source      = "/home/mt24033/Work/creds/modak-nabu-4d560bbc2566-gcp.json"
-    destination = "/tmp/gcp-creds.json"
-  }
+
+  # Execute setup script with credentials
   provisioner "shell" {
     inline = [
       "sudo chmod +x /tmp/setup.sh",
       "sudo bash /tmp/setup.sh",
       "sudo rm -rf /tmp/setup.sh",
-      "sudo rm -rf /tmp/gcp-creds.json"
+      "sudo rm -rf /tmp/aws-creds.json"
     ]
   }
 }
