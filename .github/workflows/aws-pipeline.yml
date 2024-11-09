@@ -1,4 +1,4 @@
-name: Packer Pipeline for aws
+name: Packer Pipeline for AWS
 
 on:
   push:
@@ -12,9 +12,9 @@ jobs:
 
     env:
       PACKER_LOG: 1  
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
     steps:
       - name: Checkout repository
@@ -27,19 +27,27 @@ jobs:
         run: packer init .
 
       - name: Validate Packer template
-        run: packer validate -var-file=values.pkrvars.hcl .
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        run: |
+          packer validate \
+            -var "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
+            -var "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+            -var "aws_default_region=${{ secrets.AWS_DEFAULT_REGION }}" \
+            -var-file=values.pkrvars.hcl .
 
       - name: Build Packer Image
-        # env:
-          # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          # AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         run: |
-          # Pass AWS credentials as environment variables
           packer build \
             -var "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var "aws_default_region={{ secrets.AWS_DEFAULT_REGION }}" \
+            -var "aws_default_region=${{ secrets.AWS_DEFAULT_REGION }}" \
             -var-file=values.pkrvars.hcl .
 
       - name: Notify success
@@ -49,4 +57,3 @@ jobs:
       - name: Notify failure
         if: failure()
         run: echo "Packer image build failed."
-
