@@ -12,9 +12,6 @@ jobs:
 
     env:
       PACKER_LOG: 1  
-      # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      # AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
     steps:
       - name: Checkout repository
@@ -23,32 +20,33 @@ jobs:
       - name: Set up HashiCorp Packer
         uses: hashicorp/setup-packer@v2
 
-      - name: Initialize Packer template
-        run: packer init .
+      # Install AWS CLI
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
 
-      - name: Validate Packer template
+      # Configure AWS CLI with credentials
+      - name: Configure AWS CLI
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         run: |
-          packer validate \
-            -var "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            -var "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var "aws_default_region=${{ secrets.AWS_DEFAULT_REGION }}" \
-            -var-file=values.pkrvars.hcl .
+          aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+          aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+          aws configure set default.region $AWS_DEFAULT_REGION
+
+      - name: Initialize Packer template
+        run: packer init .
+
+      - name: Validate Packer template
+        run: |
+          packer validate -var-file=values.pkrvars.hcl .
 
       - name: Build Packer Image
-        env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         run: |
-          packer build \
-            -var "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
-            -var "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
-            -var "aws_default_region=${{ secrets.AWS_DEFAULT_REGION }}" \
-            -var-file=values.pkrvars.hcl .
+          packer build -var-file=values.pkrvars.hcl .
 
       - name: Notify success
         if: success()
