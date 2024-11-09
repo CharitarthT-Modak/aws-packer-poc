@@ -1,4 +1,4 @@
-name: Build Packer Image
+name: Packer Pipeline for aws
 
 on:
   push:
