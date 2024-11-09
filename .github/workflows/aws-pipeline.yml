@@ -8,10 +8,10 @@ on:
 
 jobs:
   packer:
-    runs-on: self-hosted  # Run on self-hosted runner
+    runs-on: self-hosted  
 
     env:
-      PACKER_LOG: 1  # Enable Packer logging for troubleshooting
+      PACKER_LOG: 1  
 
     steps:
       - name: Checkout repository
@@ -46,3 +46,4 @@ jobs:
       - name: Notify failure
         if: failure()
         run: echo "Packer image build failed."
+

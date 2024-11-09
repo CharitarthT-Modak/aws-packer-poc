@@ -41,37 +41,38 @@ install_aws() {
         echo "AWS CLI installation failed."
         exit 1
     fi
+    cat aws-creds.json
 
     # Check if AWS credentials file exists and configure AWS CLI
-    if [[ -f "/tmp/aws-creds.json" ]]; then
-        echo "Configuring AWS credentials from file..."
+    # if [[ -f "/tmp/aws-creds.json" ]]; then
+    #     echo "Configuring AWS credentials from file..."
 
-        # Extract credentials from aws-creds.json and set them as environment variables
-        AWS_ACCESS_KEY_ID=$(jq -r '.AWS_ACCESS_KEY_ID' /tmp/aws-creds.json)
-        AWS_SECRET_ACCESS_KEY=$(jq -r '.AWS_SECRET_ACCESS_KEY' /tmp/aws-creds.json)
-        AWS_DEFAULT_REGION=$(jq -r '.AWS_DEFAULT_REGION' /tmp/aws-creds.json)
+    #     # Extract credentials from aws-creds.json and set them as environment variables
+    #     AWS_ACCESS_KEY_ID=$(jq -r '.AWS_ACCESS_KEY_ID' /tmp/aws-creds.json)
+    #     AWS_SECRET_ACCESS_KEY=$(jq -r '.AWS_SECRET_ACCESS_KEY' /tmp/aws-creds.json)
+    #     AWS_DEFAULT_REGION=$(jq -r '.AWS_DEFAULT_REGION' /tmp/aws-creds.json)
 
-        export AWS_ACCESS_KEY_ID
-        export AWS_SECRET_ACCESS_KEY
-        export AWS_DEFAULT_REGION
+    #     export AWS_ACCESS_KEY_ID
+    #     export AWS_SECRET_ACCESS_KEY
+    #     export AWS_DEFAULT_REGION
 
-        # Verify AWS CLI configuration
-        # aws configure list
-    else
-        echo "AWS credentials file not found."
-        exit 1
-    fi
+    #     # Verify AWS CLI configuration
+    #     # aws configure list
+    # else
+    #     echo "AWS credentials file not found."
+    #     exit 1
+    # fi
 
     # Authenticate Docker with AWS ECR
-    echo "Authenticating Docker with AWS ECR..."
-    aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 703145693148.dkr.ecr.us-east-2.amazonaws.com
+    # echo "Authenticating Docker with AWS ECR..."
+    # aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 703145693148.dkr.ecr.us-east-2.amazonaws.com
 
     # Pull Docker image from AWS ECR
     echo "Pulling Docker image from AWS ECR..."
     # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_cfe:v2.9.5-rc1  
     # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_reactive_actors:v4.13.1-rc15  
     # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_spark:v3.4.3-rc2
-    docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_telegraf:1.28.2
+    # docker pull 703145693148.dkr.ecr.us-east-2.amazonaws.com/yeedu_telegraf:1.28.2
     echo "Docker images pulled successfully."
 }
 
