@@ -27,7 +27,7 @@ jobs:
         run: packer init .
 
       - name: Validate Packer template
-        run: packer validate --var-file=values.pkrvars.hcl .
+        run: packer validate -var-file=values.pkrvars.hcl .
 
       - name: Build Packer Image
         # env:
@@ -40,7 +40,7 @@ jobs:
             -var "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" \
             -var "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
             -var "aws_default_region={{ secrets.AWS_DEFAULT_REGION }}" \
-            --var-file=values.pkrvars.hcl .
+            -var-file=values.pkrvars.hcl .
 
       - name: Notify success
         if: success()
