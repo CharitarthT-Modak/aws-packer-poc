@@ -47,6 +47,7 @@
 # }
 # Packer configuration file
 
+
 packer {
   required_plugins {
     amazon = {
